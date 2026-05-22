@@ -1,0 +1,12 @@
+services:
+  robotont:
+    build:
+      context: .
+    container_name: robotont
+    environment:
+      ROS_DOMAIN_ID: 42
+      RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+    ports:
+      - "8765:8765"
+    stdin_open: true
+    tty: true
