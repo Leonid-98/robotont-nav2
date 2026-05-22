@@ -37,7 +37,7 @@
             <axis xyz="0 0 1"/>
             <origin
                 xyz="${distance_from_center * sin(angle) + wheel_center_offset} ${-distance_from_center * cos(angle)} ${ground_clearance}"
-                rpy="${pi/2} 0 ${angle + pi + z_rotation}"
+                rpy="0 0 ${angle + pi + z_rotation}"
             />
         </joint>
     </xacro:macro>

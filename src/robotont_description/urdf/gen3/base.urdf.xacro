@@ -19,7 +19,7 @@
         <!-- Frame -->
         <link name="${prefix}base_link">
             <visual>
-                <origin rpy="0 0 ${pi/2}" xyz="0 0 ${frame_elevation}"/>
+                <origin rpy="${-pi / 2} 0 ${pi / 2}" xyz="0 0 ${frame_elevation}"/>
                 <geometry>
                     <mesh filename="package://robotont_description/meshes/gen3/frame_module_pla.STL"/>
                 </geometry>
@@ -31,7 +31,7 @@
                 <geometry>
                     <mesh filename="package://robotont_description/meshes/shared/collision_body.STL"/>
                 </geometry>
-                <origin rpy="${pi/2} 0 ${pi/2}" xyz="0 0 ${frame_elevation}"/>
+                <origin rpy="0 0 ${pi / 2}" xyz="0 0 ${frame_elevation}"/>
             </collision>
             <inertial>
                 <mass value="3"/>
@@ -52,7 +52,7 @@
             <origin xyz="0 0 0" rpy="0 0 0"/>
         </joint>
 
-        <link name="${prefix}base_link_spacers">
+        <!-- <link name="${prefix}base_link_spacers">
             <visual>
                 <origin rpy="0 0 ${pi/2}" xyz="0 0 ${frame_elevation}"/>
                 <geometry>
@@ -67,8 +67,8 @@
         <joint name="${prefix}base_joint_spacers" type="fixed">
             <parent link="${prefix}base_footprint"/>
             <child link="${prefix}base_link_spacers"/>
-            <origin xyz="0 0 0" rpy="0 0 ${frame_elevation}"/>
-        </joint>
+            <origin xyz="0 0 0" rpy="${pi} ${pi / 2} 0"/>
+        </joint> -->
 
         <!-- PCB -->
         <link name="${prefix}pcb_link">
@@ -86,7 +86,7 @@
         <joint name="${prefix}pcb_joint" type="fixed">
             <parent link="${prefix}base_link"/>
             <child link="${prefix}pcb_link"/>
-            <origin xyz="0.0025 0 ${frame_ground_clearance + pcb_offset}" rpy="0 ${pi / 2} 0"/>
+            <origin xyz="0.0025 0 ${frame_ground_clearance + pcb_offset}" rpy="0 0 0"/>
         </joint>
 
         <!-- E-button -->
@@ -107,7 +107,7 @@
             <axis xyz="0 0 1"/>
             <origin
                 xyz="0.0075 0.115 ${frame_ground_clearance + frame_height - e_button_offset}"
-                rpy="${pi / 2} 0 ${pi / 2}"
+                rpy="0 0 ${pi / 2}"
             />
         </joint>
 
@@ -129,7 +129,7 @@
             <axis xyz="0 0 1"/>
             <origin
                 xyz="-0.0472 0.111 ${frame_ground_clearance + frame_height - 0.001}"
-                rpy="${pi / 2} 0 ${pi / 2}"
+                rpy="0 0 0"
             />
         </joint>
 
@@ -151,12 +151,12 @@
             <axis xyz="0 0 1"/>
             <origin
                 xyz="-0.07 0.12 ${frame_ground_clearance + frame_height - 0.007}"
-                rpy="0 0 0"
+                rpy="${-pi / 2} 0 ${pi / 2}"
             />
         </joint>
 
         <!-- Battery module -->
-        <link name="${prefix}battery_module_link">
+        <!-- <link name="${prefix}battery_module_link">
             <visual>
                 <geometry>
                     <mesh filename="package://robotont_description/meshes/gen3/battery_module.STL"/>
@@ -173,12 +173,12 @@
             <axis xyz="0 0 1"/>
             <origin
                 xyz="0.08 0 ${frame_ground_clearance + frame_height + 0.0025}"
-                rpy="${pi / 2} 0 ${pi / 2}"
+                rpy="0 ${pi} ${pi / 2}"
             />
-        </joint>
+        </joint> -->
 
         <!-- OLED module -->
-        <link name="${prefix}screen_module_link">
+        <!-- <link name="${prefix}screen_module_link">
             <visual>
                 <geometry>
                     <mesh filename="package://robotont_description/meshes/gen3/ssd1306.STL"/>
@@ -195,8 +195,8 @@
             <axis xyz="0 0 1"/>
             <origin
                 xyz="-0.0325 0.1185 ${frame_ground_clearance + frame_height-0.0015}"
-                rpy="0 0 0"
+                rpy="${-pi / 2} 0 ${pi / 2}"
             />
-        </joint>
+        </joint> -->
     </xacro:macro>
 </robot>
