@@ -1,0 +1,7 @@
+/**:
+  ros__parameters:
+    odom_frame: "odom"
+    base_frame: "base_footprint"
+    initial_x: 0.0
+    initial_y: -1.5
+    initial_theta: 0.0

@@ -36,3 +36,7 @@ qtcreator-*
 .#*
 
 docker_tmp/launch*
+
+# Saved SLAM maps (directory is tracked via .gitkeep)
+saved_maps/*
+!saved_maps/.gitkeep

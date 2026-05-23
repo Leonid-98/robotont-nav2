@@ -1,6 +1,6 @@
 const defaultWorld = {
   version: 1,
-  name: "robotont_room",
+  name: "room",
   resolution: 0.05,
   origin: { x: -3.0, y: -2.0 },
   bounds: { min_x: -3.0, min_y: -2.0, max_x: 3.0, max_y: 2.0 },

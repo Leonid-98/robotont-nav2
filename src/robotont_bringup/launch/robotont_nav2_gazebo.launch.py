@@ -108,7 +108,7 @@ def _setup(context, *args, **kwargs):
     foxglove_port = int(LaunchConfiguration("foxglove_port").perform(context).strip())
 
     robot_model = str(description_pkg / "urdf/gen3/robotont.urdf.xacro")
-    world = str(bringup_pkg / "worlds/robotont_room.sdf")
+    world = str(bringup_pkg / "worlds/room.sdf")
     nav2_params_file = str(bringup_pkg / "config/nav2_params.yaml")
     slam_params = str(bringup_pkg / "config/slam_toolbox.yaml")
     gz_launch = str(gz_pkg / "launch/gz_sim.launch.py")
@@ -203,6 +203,18 @@ def _setup(context, *args, **kwargs):
                 {"goal_topic": "/goal_pose"},
                 {"default_frame": "map"},
                 {"action_name": "navigate_to_pose"},
+            ],
+        ),
+        Node(
+            package="robotont_bringup",
+            executable="map_saver_trigger_node.py",
+            name="map_saver_trigger",
+            output="screen",
+            parameters=[
+                {"save_directory": "/ws/saved_maps"},
+                {"map_topic": "/map"},
+                {"service_name": "save_map"},
+                {"use_sim_time": use_sim_time},
             ],
         ),
         Node(

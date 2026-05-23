@@ -13,8 +13,14 @@ public:
         // Initialize parameters
         this->declare_parameter<std::string>("odom_frame", "odom");
         this->declare_parameter<std::string>("base_frame", "base_footprint");
+        this->declare_parameter<double>("initial_x", 0.0);
+        this->declare_parameter<double>("initial_y", 0.0);
+        this->declare_parameter<double>("initial_theta", 0.0);
         this->get_parameter("odom_frame", odom_frame_);
         this->get_parameter("base_frame", base_frame_);
+        this->get_parameter("initial_x", x_);
+        this->get_parameter("initial_y", y_);
+        this->get_parameter("initial_theta", th_);
 
         // Create subscribers and publishers
         vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
@@ -23,13 +29,13 @@ public:
         odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/odom", 50);
         odom_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
-        // Initialize odometry variables
-        x_ = 0.0;
-        y_ = 0.0;
-        th_ = 0.0;
         vx_ = 0.0;
         vy_ = 0.0;
         vth_ = 0.0;
+
+        RCLCPP_INFO(
+            this->get_logger(), "Initial odom pose: x=%.3f y=%.3f theta=%.3f rad",
+            x_, y_, th_);
 
         current_time_ = this->now();
         last_time_ = this->now();

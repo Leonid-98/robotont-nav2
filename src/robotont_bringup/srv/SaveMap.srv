@@ -1,0 +1,6 @@
+# Base file name only: no directories, no .yaml/.pgm suffix (those are added for you).
+# Whitespace or empty string -> automatic name map_YYYYMMDD_HHMMSS (UTC).
+string basename
+---
+bool success
+string message

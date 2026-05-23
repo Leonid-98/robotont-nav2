@@ -8,7 +8,7 @@ services:
       RMW_IMPLEMENTATION: rmw_fastrtps_cpp
       LIBGL_ALWAYS_SOFTWARE: "1"
       ROBOTONT_WORLD_MODE: ${ROBOTONT_WORLD_MODE:-gazebo}
-      ROBOTONT_WORLD_FILE: ${ROBOTONT_WORLD_FILE:-/ws/worlds/robotont_room.json}
+      ROBOTONT_WORLD_FILE: ${ROBOTONT_WORLD_FILE:-/ws/worlds/room.json}
       ROBOTONT_PRIMARY_COLOR: ${ROBOTONT_PRIMARY_COLOR:-0.16 0.65 0.98 1.0}
       ROBOTONT_FOXGLOVE_PORT: ${ROBOTONT_FOXGLOVE_PORT:-8765}
       ROBOTONT_EXTRA_LAUNCH_ARGS: ${ROBOTONT_EXTRA_LAUNCH_ARGS:-}
@@ -24,6 +24,6 @@ services:
       - "${GZ_DISCOVERY_SRV_HOST_PORT:-10318}:${GZ_DISCOVERY_SRV_PORT:-10318}/udp"
     volumes:
       - ./worlds:/ws/worlds:ro
-      - ./docker_tmp:/tmp:rw
+      - ./saved_maps:/ws/saved_maps:rw
     stdin_open: true
     tty: true

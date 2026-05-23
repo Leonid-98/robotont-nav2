@@ -39,6 +39,11 @@ RUN chmod +x ./scripts/launch_robotont.sh
 RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
  && colcon build --symlink-install
 
+# slam_toolbox SerializePoseGraph writes relative filenames to the process CWD;
+# defaulting CWD here makes Foxglove/slam "save as test1" land on the host via ./saved_maps
+RUN mkdir -p /ws/saved_maps
+WORKDIR /ws/saved_maps
+
 EXPOSE 8765
 EXPOSE 10317/udp
 EXPOSE 10318/udp

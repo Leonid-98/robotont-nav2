@@ -18,6 +18,7 @@ def _setup(context, *args, **kwargs):
     robot_model = str(description_pkg / "urdf/gen3/robotont.urdf.xacro")
     nav2_params = str(bringup_pkg / "config/nav2_params.yaml")
     slam_params = str(bringup_pkg / "config/slam_toolbox.yaml")
+    sim_driver_params = str(bringup_pkg / "config/simple_sim_driver.yaml")
     slam_launch = str(slam_pkg / "launch/online_async_launch.py")
     nav2_remaps = [("/tf", "tf"), ("/tf_static", "tf_static")]
 
@@ -51,10 +52,7 @@ def _setup(context, *args, **kwargs):
             executable="simple_driver_node",
             name="driver",
             output="screen",
-            parameters=[
-                {"odom_frame": "odom"},
-                {"base_frame": "base_footprint"},
-            ],
+            parameters=[sim_driver_params],
         ),
         Node(
             package="robotont_simple_simulator",
@@ -170,6 +168,18 @@ def _setup(context, *args, **kwargs):
             ],
         ),
         Node(
+            package="robotont_bringup",
+            executable="map_saver_trigger_node.py",
+            name="map_saver_trigger",
+            output="screen",
+            parameters=[
+                {"save_directory": "/ws/saved_maps"},
+                {"map_topic": "/map"},
+                {"service_name": "save_map"},
+                {"use_sim_time": False},
+            ],
+        ),
+        Node(
             package="foxglove_bridge",
             executable="foxglove_bridge",
             name="foxglove_bridge",
@@ -186,7 +196,7 @@ def generate_launch_description():
     return LaunchDescription([
         SetEnvironmentVariable("RCUTILS_LOGGING_BUFFERED_STREAM", "1"),
         DeclareLaunchArgument("primary_color", default_value="0.16 0.65 0.98 1.0"),
-        DeclareLaunchArgument("world_file", default_value="/ws/worlds/robotont_room.json"),
+        DeclareLaunchArgument("world_file", default_value="/ws/worlds/room.json"),
         DeclareLaunchArgument("foxglove_port", default_value="8765"),
         OpaqueFunction(function=_setup),
     ])

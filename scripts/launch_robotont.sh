@@ -6,7 +6,7 @@ set -u
 
 mode="${ROBOTONT_WORLD_MODE:-gazebo}"
 primary_color="${ROBOTONT_PRIMARY_COLOR:-0.16 0.65 0.98 1.0}"
-world_file="${ROBOTONT_WORLD_FILE:-/ws/worlds/robotont_room.json}"
+world_file="${ROBOTONT_WORLD_FILE:-/ws/worlds/room.json}"
 foxglove_port="${ROBOTONT_FOXGLOVE_PORT:-8765}"
 extra_args="${ROBOTONT_EXTRA_LAUNCH_ARGS:-}"
 
