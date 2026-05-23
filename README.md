@@ -126,7 +126,7 @@ flowchart LR
 
 | File / source | Used when | Purpose |
 |----------------|-----------|---------|
-| `src/robotont_bringup/config/nav2_params.yaml` | Gazebo + custom Nav2 | Nav2 controller, planner, costmaps, BT navigator, footprints, speeds, etc. Standard Nav2 parameter layout. |
+| `src/robotont_bringup/config/nav2_params.yaml` | Gazebo + custom Nav2 | Nav2 **DWB** (up to **~1.0 m/s** linear, **1.4 rad/s** yaw per `FollowPath` + **velocity_smoother**), costmaps, **`path_handler`**, **`search_window`**, **PoseProgressChecker**. |
 | `src/robotont_bringup/config/slam_toolbox.yaml` | Gazebo + custom Nav2 | slam_toolbox: `odom_frame`, `map_frame`, `base_frame`, `scan_topic`, resolution, ranges, **mapping** mode. |
 | `src/robotont_bringup/config/simple_sim_driver.yaml` | **Custom** mode only | `initial_x`, `initial_y`, `initial_theta`, `odom_frame`, `base_frame`. |
 | `worlds/*.json` | Custom mode | Geometry for `fake_laser` (`walls`, `boxes`). `origin` in JSON is **not** applied to TF (documentation / editor metadata). |
@@ -198,6 +198,8 @@ Foxglove WebSocket: **`ws://localhost:8765`** (or your `ROBOTONT_FOXGLOVE_HOST_P
 2. Connect to `ws://localhost:8765` (adjust port if remapped).
 3. Open a 3D panel; set **fixed frame** to **`map`** once SLAM is publishing.
 4. Useful topics: `/tf`, `/tf_static`, `/map`, `/scan`, `/odom`, `/robot_description`, `/cmd_vel`, `/goal_pose`, `/navigate_to_pose/_action/status`.
+
+**Map “floating” or drifting in the 3D view:** That is almost always the **3D panel fixed frame**, not a Foxglove defect. `/map` is published in frame **`map`**, while **slam_toolbox** continuously updates TF **`map → odom`** as it matches laser scans. If the fixed frame is **`odom`** or **`base_link`**, the occupancy grid is drawn in a parent frame that moves relative to how you intuit the world—so the map appears to swim. Set fixed frame to **`map`** for a stable grid; the robot and laser then move correctly on the map. Gazebo can look worse than the custom JSON sim because scans and timing differ, so SLAM may correct **`map → odom`** more visibly at startup.
 
 Gazebo has no GUI in this setup; Foxglove is the main visualizer.
 
@@ -302,7 +304,7 @@ Writes **`filename.pgm` / `filename.yaml`** relative to the process **current wo
 
 ## 12. World files and editor
 
-**Gazebo:** `src/robotont_bringup/worlds/room.sdf` — room, obstacles, simplified robot + lidar.
+**Gazebo:** `src/robotont_bringup/worlds/robotont_room.sdf` — room, obstacles, simplified robot + lidar.
 
 **Custom JSON:** `worlds/room.json` (and your own). If the file is missing or invalid, `fake_laser_node` falls back to built-in demo geometry.
 
@@ -397,7 +399,40 @@ Gazebo runs **headless** in `gazebo` mode and feeds ROS via **`ros_gz_bridge`**.
 
 ---
 
-## Further reading (upstream)
+## Why short navigation goals often work better than long ones
 
-- [Nav2 documentation](https://navigation.ros.org/) — architecture, parameters, behavior trees, costmaps.
-- [slam_toolbox](https://github.com/SteveMacenski/slam_toolbox) — mapping vs localization, serialization, tuning.
+`/plan` is produced by **NavFn** on the **global costmap** (static SLAM map + inflated obstacles). **Execution** is **DWB** on the **local costmap** (rolling window in **`odom`**, mostly **live laser**). Short goals “work better” because several failure modes **scale with path length and clutter**:
+
+1. **Geometric vs feasible** — NavFn optimizes a **2D grid** path and can cut corners that are **dynamically infeasible** for a differential drive at your speed/accel limits: tight sequential turns, grazing inflated cells, or sliding along a wall where **no short rollout** stays collision-free. DWB then returns **no valid trajectory** (`NoValidControl`) or near-zero velocity while the global polyline still looks fine.
+
+2. **Unknown / stale map** — With **`allow_unknown: true`**, the planner may route through **unknown** cells. Until the laser **marks** them, the local costmap can disagree with the global plan; long paths expose more of that mismatch.
+
+3. **SLAM motion of the map** — **`map → odom`** drifts and updates as you drive. A long path was generated in an **older** map pose; the **local** view (odom + scan) may no longer line up with the stored global path, so the middle of the route becomes “ambiguous” or blocked in cost space.
+
+4. **Combinatorial load** — DWB samples **(vx × vθ × time)** rollouts. More obstacles in view → more rollouts hit **BaseObstacle** or **Oscillation** → the best admissible command drops toward **stop / spin**; short segments stay in **open** space so more samples survive.
+
+5. **Costmap clipping** — The controller path segment is still **clipped to the local costmap** (see troubleshooting below). On a long detour, if the relevant polyline leaves that window, the **effective** plan DWB sees can shrink drastically.
+
+**How to confirm (quick):** Watch **`controller_server`** logs for **`NoValidControl`**, **`Failed to make progress`**, or **`IllegalTrajectory`** (oscillation / obstacle). Temporarily set **`FollowPath.debug_trajectory_details: true`** in `nav2_params.yaml` (verbose). Compare **`/plan`** (map frame) with **`/local_costmap/costmap`** and the robot footprint along the route.
+
+**Mitigations (conceptual):** shorter horizons (waypoints), **`allow_unknown: false`** once the map is built, a **smoother** or different **global planner**, **lower max speed** in clutter, **wider corridors** in JSON, or **local costmap static layer** from `/map` (heavier, but aligns local and global obstacles).
+
+---
+
+## Troubleshooting Nav2 (path OK, robot stalls mid-route)
+
+**`/plan` looks good but the robot stops or spins going around a wall** — that is usually **local control**, not global planning:
+
+1. **DWB vs costmap** — The global planner ignores fine dynamics. **DWB** scores short trajectories against the **local costmap** (inflation + laser). If **path-following critics** dominate **BaseObstacle**, DWB can try to hug the global path into **inflated lethal** cells, find **no legal `cmd_vel`**, and you get a stall / spin while the global path still looks fine. This repo bumps **BaseObstacle** weight, softens **PathAlign / PathDist / Goal** scales, widens the **local costmap** window, and slightly **reduces inflation** so corridors stay feasible (tune in `nav2_params.yaml` under `controller_server` → `FollowPath` and `local_costmap` / `global_costmap`).
+
+2. **Oscillation critic** — Legitimate **forward / back / turn** sequences around obstacles can be rejected as “oscillating.” `Oscillation.*` parameters under `FollowPath` relax resets (`oscillation_reset_dist`, `oscillation_reset_angle`, `x_only_threshold`).
+
+3. **Progress** — **`PoseProgressChecker`** (also in `nav2_params.yaml`) treats **yaw** progress as valid so pure rotations on tight arcs do not trip “no progress” as easily.
+
+**Debug:** In RViz or Foxglove, show **`/local_costmap/costmap`** with the robot on the path: if the path sits on **red/inflated** cells, widen the maze, lower inflation, or reduce `robot_radius` only if it matches the real robot.
+
+**Local plan looks like a dot while `/plan` is long:** Nav2’s **FeasiblePathHandler** only keeps poses that fall **inside the rolling local costmap**. If the window is too small, the transformed path is **clipped at the map edge** and DWB sees almost nothing—raise **`local_costmap` width/height**, increase **`path_handler.prune_distance`**, and **`search_window`** (see `nav2_params.yaml`).
+
+---
+
+

@@ -108,7 +108,7 @@ def _setup(context, *args, **kwargs):
     foxglove_port = int(LaunchConfiguration("foxglove_port").perform(context).strip())
 
     robot_model = str(description_pkg / "urdf/gen3/robotont.urdf.xacro")
-    world = str(bringup_pkg / "worlds/room.sdf")
+    world = str(bringup_pkg / "worlds/robotont_room.sdf")
     nav2_params_file = str(bringup_pkg / "config/nav2_params.yaml")
     slam_params = str(bringup_pkg / "config/slam_toolbox.yaml")
     gz_launch = str(gz_pkg / "launch/gz_sim.launch.py")
@@ -149,9 +149,9 @@ def _setup(context, *args, **kwargs):
             output="screen",
             arguments=[
                 "/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist",
-                "/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
-                "/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
-                "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
+                "/odom@nav_msgs/msg/Odometry@gz.msgs.Odometry",
+                "/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan",
+                "/clock@rosgraph_msgs/msg/Clock@gz.msgs.Clock",
             ],
         ),
         Node(
