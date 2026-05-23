@@ -3,8 +3,10 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, Opaq
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.descriptions import ParameterFile
 from launch_ros.parameter_descriptions import ParameterValue
 from ament_index_python.packages import get_package_share_path
+from nav2_common.launch import RewrittenYaml
 
 
 def _setup(context, *args, **kwargs):
@@ -16,11 +18,20 @@ def _setup(context, *args, **kwargs):
     world_file = LaunchConfiguration("world_file").perform(context).strip()
     foxglove_port = int(LaunchConfiguration("foxglove_port").perform(context).strip())
     robot_model = str(description_pkg / "urdf/gen3/robotont.urdf.xacro")
-    nav2_params = str(bringup_pkg / "config/nav2_params.yaml")
+    nav2_params_file = str(bringup_pkg / "config/nav2_params.yaml")
     slam_params = str(bringup_pkg / "config/slam_toolbox.yaml")
     sim_driver_params = str(bringup_pkg / "config/simple_sim_driver.yaml")
     slam_launch = str(slam_pkg / "launch/online_async_launch.py")
     nav2_remaps = [("/tf", "tf"), ("/tf_static", "tf_static")]
+    nav2_params = ParameterFile(
+        RewrittenYaml(
+            source_file=nav2_params_file,
+            root_key="",
+            param_rewrites={"use_sim_time": "false"},
+            convert_types=True,
+        ),
+        allow_substs=True,
+    )
 
     robot_description = ParameterValue(
         Command([
