@@ -1,0 +1,288 @@
+<?xml version="1.0" ?>
+<sdf version="1.10">
+  <world name="robotont_room">
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <gravity>0 0 -9.81</gravity>
+    <magnetic_field>0 0 0</magnetic_field>
+    <atmosphere type="adiabatic"/>
+
+    <light name="sun" type="directional">
+      <pose>0 0 6 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>8 6</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>8 6</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.55 0.55 0.55 1</ambient>
+            <diffuse>0.55 0.55 0.55 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="north_wall">
+      <static>true</static>
+      <pose>0 2 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>6 0.08 1</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>6 0.08 1</size></box></geometry>
+          <material><ambient>0.75 0.75 0.72 1</ambient><diffuse>0.75 0.75 0.72 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="south_wall">
+      <static>true</static>
+      <pose>0 -2 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>6 0.08 1</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>6 0.08 1</size></box></geometry>
+          <material><ambient>0.75 0.75 0.72 1</ambient><diffuse>0.75 0.75 0.72 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="east_wall">
+      <static>true</static>
+      <pose>3 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.08 4 1</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.08 4 1</size></box></geometry>
+          <material><ambient>0.75 0.75 0.72 1</ambient><diffuse>0.75 0.75 0.72 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="west_wall">
+      <static>true</static>
+      <pose>-3 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.08 4 1</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.08 4 1</size></box></geometry>
+          <material><ambient>0.75 0.75 0.72 1</ambient><diffuse>0.75 0.75 0.72 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="obstacle_1">
+      <static>true</static>
+      <pose>-1.0 0 0.35 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 1.6 0.7</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 1.6 0.7</size></box></geometry>
+          <material><ambient>0.45 0.58 0.72 1</ambient><diffuse>0.45 0.58 0.72 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="obstacle_2">
+      <static>true</static>
+      <pose>1.0 -0.75 0.35 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 1.1 0.7</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 1.1 0.7</size></box></geometry>
+          <material><ambient>0.62 0.52 0.43 1</ambient><diffuse>0.62 0.52 0.43 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="obstacle_3">
+      <static>true</static>
+      <pose>1.9 0.85 0.35 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.6 0.5 0.7</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.6 0.5 0.7</size></box></geometry>
+          <material><ambient>0.48 0.66 0.46 1</ambient><diffuse>0.48 0.66 0.46 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="robotont_proxy">
+      <pose>0 0 0 0 0 0</pose>
+      <link name="base_footprint">
+        <pose>0 0 0 0 0 0</pose>
+        <inertial>
+          <mass>3.0</mass>
+          <inertia>
+            <ixx>0.0246</ixx>
+            <iyy>0.0208</iyy>
+            <izz>0.0432</izz>
+          </inertia>
+        </inertial>
+        <collision name="base_collision">
+          <pose>0 0 0.105 0 0 0</pose>
+          <geometry><box><size>0.34 0.28 0.10</size></box></geometry>
+        </collision>
+        <visual name="base_visual">
+          <pose>0 0 0.105 0 0 0</pose>
+          <geometry><box><size>0.34 0.28 0.10</size></box></geometry>
+          <material><ambient>0.16 0.65 0.98 1</ambient><diffuse>0.16 0.65 0.98 1</diffuse></material>
+        </visual>
+      </link>
+
+      <link name="left_wheel">
+        <pose>0 0.165 0.05 1.57079632679 0 0</pose>
+        <inertial>
+          <mass>0.25</mass>
+          <inertia>
+            <ixx>0.0002</ixx>
+            <iyy>0.0002</iyy>
+            <izz>0.0002</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.05</radius><length>0.026</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.05</radius><length>0.026</length></cylinder></geometry>
+          <material><ambient>0.12 0.12 0.12 1</ambient><diffuse>0.12 0.12 0.12 1</diffuse></material>
+        </visual>
+      </link>
+
+      <link name="right_wheel">
+        <pose>0 -0.165 0.05 1.57079632679 0 0</pose>
+        <inertial>
+          <mass>0.25</mass>
+          <inertia>
+            <ixx>0.0002</ixx>
+            <iyy>0.0002</iyy>
+            <izz>0.0002</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry><cylinder><radius>0.05</radius><length>0.026</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.05</radius><length>0.026</length></cylinder></geometry>
+          <material><ambient>0.12 0.12 0.12 1</ambient><diffuse>0.12 0.12 0.12 1</diffuse></material>
+        </visual>
+      </link>
+
+      <link name="base_scan">
+        <pose>0.08 0 0.16 0 0 0</pose>
+        <inertial>
+          <mass>0.05</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <iyy>0.00001</iyy>
+            <izz>0.00001</izz>
+          </inertia>
+        </inertial>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.025</radius><length>0.02</length></cylinder></geometry>
+          <material><ambient>0.05 0.05 0.05 1</ambient><diffuse>0.05 0.05 0.05 1</diffuse></material>
+        </visual>
+        <sensor name="lidar" type="gpu_lidar">
+          <pose>0 0 0 0 0 0</pose>
+          <topic>/scan</topic>
+          <gz_frame_id>base_scan</gz_frame_id>
+          <update_rate>10</update_rate>
+          <lidar>
+            <scan>
+              <horizontal>
+                <samples>361</samples>
+                <resolution>1</resolution>
+                <min_angle>-3.14159265359</min_angle>
+                <max_angle>3.14159265359</max_angle>
+              </horizontal>
+            </scan>
+            <range>
+              <min>0.08</min>
+              <max>6.0</max>
+              <resolution>0.01</resolution>
+            </range>
+          </lidar>
+          <always_on>true</always_on>
+          <visualize>false</visualize>
+        </sensor>
+      </link>
+
+      <joint name="left_wheel_joint" type="revolute">
+        <parent>base_footprint</parent>
+        <child>left_wheel</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <lower>-1e16</lower>
+            <upper>1e16</upper>
+          </limit>
+        </axis>
+      </joint>
+
+      <joint name="right_wheel_joint" type="revolute">
+        <parent>base_footprint</parent>
+        <child>right_wheel</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <lower>-1e16</lower>
+            <upper>1e16</upper>
+          </limit>
+        </axis>
+      </joint>
+
+      <joint name="base_scan_joint" type="fixed">
+        <parent>base_footprint</parent>
+        <child>base_scan</child>
+      </joint>
+
+      <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+        <left_joint>left_wheel_joint</left_joint>
+        <right_joint>right_wheel_joint</right_joint>
+        <wheel_separation>0.33</wheel_separation>
+        <wheel_radius>0.05</wheel_radius>
+        <odom_publish_frequency>50</odom_publish_frequency>
+        <topic>/cmd_vel</topic>
+        <odom_topic>/odom</odom_topic>
+        <frame_id>odom</frame_id>
+        <child_frame_id>base_footprint</child_frame_id>
+      </plugin>
+    </model>
+  </world>
+</sdf>

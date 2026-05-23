@@ -15,8 +15,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-jazzy-joint-state-publisher \
     ros-jazzy-launch \
     ros-jazzy-launch-ros \
+    ros-jazzy-navigation2 \
+    ros-jazzy-nav2-bringup \
+    ros-jazzy-nav2-map-server \
     ros-jazzy-nav2-msgs \
     ros-jazzy-robot-state-publisher \
+    ros-jazzy-ros-gz \
+    ros-jazzy-ros-gz-bridge \
+    ros-jazzy-ros-gz-sim \
+    ros-jazzy-slam-toolbox \
     ros-jazzy-tf2-geometry-msgs \
     ros-jazzy-xacro \
  && rm -rf /var/lib/apt/lists/*
@@ -24,10 +31,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR ${ROS_WS}
 
 COPY src ./src
+COPY worlds ./worlds
+COPY scripts ./scripts
+
+RUN chmod +x ./scripts/launch_robotont.sh
 
 RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
  && colcon build --symlink-install
 
 EXPOSE 8765
+EXPOSE 10317/udp
+EXPOSE 10318/udp
 
-CMD ["bash", "-lc", "source /ws/install/setup.bash && ros2 launch robotont_bringup robotont_foxglove.launch.py"]
+CMD ["/ws/scripts/launch_robotont.sh"]

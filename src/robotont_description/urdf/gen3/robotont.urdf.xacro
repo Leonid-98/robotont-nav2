@@ -30,6 +30,13 @@
 
     <link name="${prefix}base_footprint"/>
 
+    <link name="${prefix}base_scan"/>
+    <joint name="${prefix}base_scan_joint" type="fixed">
+        <parent link="${prefix}base_link"/>
+        <child link="${prefix}base_scan"/>
+        <origin xyz="0.08 0 0.10" rpy="0 0 0"/>
+    </joint>
+
     <!-- Frame module -->
     <xacro:base_macro
         color="${primary_color}"

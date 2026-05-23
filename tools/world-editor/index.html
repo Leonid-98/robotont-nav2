@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Robotont World Editor</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <aside class="sidebar">
+        <header class="brand">
+          <h1>Robotont World Editor</h1>
+          <span id="status">Ready</span>
+        </header>
+
+        <section class="panel">
+          <div class="segmented" role="group" aria-label="Tool">
+            <button class="tool active" data-tool="select" title="Select">Select</button>
+            <button class="tool" data-tool="wall" title="Wall">Wall</button>
+            <button class="tool" data-tool="box" title="Box">Box</button>
+          </div>
+          <button id="deleteSelected" class="danger" type="button">Delete</button>
+        </section>
+
+        <section class="panel grid-two">
+          <label>
+            Name
+            <input id="worldName" type="text" value="robotont_room" />
+          </label>
+          <label>
+            Resolution
+            <input id="resolution" type="number" step="0.01" min="0.01" value="0.05" />
+          </label>
+          <label>
+            Min X
+            <input id="minX" type="number" step="0.1" value="-3" />
+          </label>
+          <label>
+            Min Y
+            <input id="minY" type="number" step="0.1" value="-2" />
+          </label>
+          <label>
+            Max X
+            <input id="maxX" type="number" step="0.1" value="3" />
+          </label>
+          <label>
+            Max Y
+            <input id="maxY" type="number" step="0.1" value="2" />
+          </label>
+        </section>
+
+        <section class="panel grid-two">
+          <button id="resetWorld" type="button">Reset</button>
+          <label class="file-button">
+            Import
+            <input id="importFile" type="file" accept="application/json,.json" />
+          </label>
+          <button id="copyJson" type="button">Copy JSON</button>
+          <button id="downloadJson" type="button">Export JSON</button>
+        </section>
+
+        <section class="panel">
+          <h2>Selected</h2>
+          <div id="selectionForm" class="selection empty">Nothing selected</div>
+        </section>
+
+        <section class="panel">
+          <h2>World JSON</h2>
+          <textarea id="jsonPreview" spellcheck="false"></textarea>
+        </section>
+      </aside>
+
+      <section class="stage">
+        <canvas id="worldCanvas" width="1200" height="800"></canvas>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -13,6 +13,7 @@ def _setup(context, *args, **kwargs):
     primary_color = LaunchConfiguration("primary_color").perform(context).strip()
     linear_speed = LaunchConfiguration("linear_speed")
     angular_speed = LaunchConfiguration("angular_speed")
+    foxglove_port = int(LaunchConfiguration("foxglove_port").perform(context).strip())
 
     if generation == "2.1":
         robot_model = str(pkg / "urdf/gen2_1/robotont.urdf.xacro")
@@ -69,7 +70,7 @@ def _setup(context, *args, **kwargs):
             output="screen",
             parameters=[
                 {"address": "0.0.0.0"},
-                {"port": 8765},
+                {"port": foxglove_port},
             ],
         ),
     ]
@@ -81,5 +82,6 @@ def generate_launch_description():
         DeclareLaunchArgument("primary_color", default_value="0.16 0.65 0.98 1.0"),
         DeclareLaunchArgument("linear_speed", default_value="0.2"),
         DeclareLaunchArgument("angular_speed", default_value="0.5"),
+        DeclareLaunchArgument("foxglove_port", default_value="8765"),
         OpaqueFunction(function=_setup),
     ])
