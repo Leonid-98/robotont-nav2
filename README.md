@@ -6,6 +6,11 @@ The goal of this project is to create a virtual playground for a robot that shou
 
 The project uses a virtual copy of Robotont. The main focus was to build Foxglove-based visualizations; therefore, the Gazebo version was not properly tested and was added rather ad hoc. The application is dockerized and can therefore be run on any machine.
 
+<img src="notes/img/preview.png" alt="" style="width:500px;"/>
+
+<iframe width="500" src="https://youtu.be/ZjLeJCJE14o" allowfullscreen></iframe>
+
+
 ## Key features
 
 Runtime:
