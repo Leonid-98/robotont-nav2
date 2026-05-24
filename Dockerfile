@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-jazzy-ros-gz-sim \
     ros-jazzy-slam-toolbox \
     ros-jazzy-tf2-geometry-msgs \
+    ros-jazzy-visualization-msgs \
     ros-jazzy-xacro \
  && rm -rf /var/lib/apt/lists/*
 
@@ -33,6 +34,8 @@ WORKDIR ${ROS_WS}
 COPY src ./src
 COPY worlds ./worlds
 COPY scripts ./scripts
+COPY src/robotont_bringup/config ./config
+COPY src/robotont_bringup/worlds ./gazebo_worlds
 
 RUN chmod +x ./scripts/launch_robotont.sh
 

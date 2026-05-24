@@ -3,21 +3,9 @@ services:
     build:
       context: .
     container_name: robotont
-    environment:
-      ROS_DOMAIN_ID: 42
-      RMW_IMPLEMENTATION: rmw_fastrtps_cpp
-      LIBGL_ALWAYS_SOFTWARE: "1"
-      ROBOTONT_WORLD_MODE: ${ROBOTONT_WORLD_MODE:-gazebo}
-      ROBOTONT_WORLD_FILE: ${ROBOTONT_WORLD_FILE:-/ws/worlds/room.json}
-      ROBOTONT_PRIMARY_COLOR: ${ROBOTONT_PRIMARY_COLOR:-0.16 0.65 0.98 1.0}
-      ROBOTONT_FOXGLOVE_PORT: ${ROBOTONT_FOXGLOVE_PORT:-8765}
-      ROBOTONT_EXTRA_LAUNCH_ARGS: ${ROBOTONT_EXTRA_LAUNCH_ARGS:-}
-      GZ_PARTITION: ${GZ_PARTITION:-robotont}
-      GZ_DISCOVERY_MSG_PORT: ${GZ_DISCOVERY_MSG_PORT:-10317}
-      GZ_DISCOVERY_SRV_PORT: ${GZ_DISCOVERY_SRV_PORT:-10318}
-      IGN_PARTITION: ${GZ_PARTITION:-robotont}
-      IGN_DISCOVERY_MSG_PORT: ${GZ_DISCOVERY_MSG_PORT:-10317}
-      IGN_DISCOVERY_SRV_PORT: ${GZ_DISCOVERY_SRV_PORT:-10318}
+    env_file:
+      - defaults.env
+      - settings.env
     ports:
       - "${ROBOTONT_FOXGLOVE_HOST_PORT:-8765}:${ROBOTONT_FOXGLOVE_PORT:-8765}"
       - "${GZ_DISCOVERY_MSG_HOST_PORT:-10317}:${GZ_DISCOVERY_MSG_PORT:-10317}/udp"
@@ -25,5 +13,7 @@ services:
     volumes:
       - ./worlds:/ws/worlds:ro
       - ./saved_maps:/ws/saved_maps:rw
+      - ./src/robotont_bringup/config:/ws/config:ro
+      - ./src/robotont_bringup/worlds:/ws/gazebo_worlds:ro
     stdin_open: true
     tty: true

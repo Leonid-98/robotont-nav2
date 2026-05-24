@@ -53,6 +53,7 @@ install(TARGETS
 )
 
 install(PROGRAMS
+  scripts/clicked_waypoint_node.py
   scripts/fake_laser_node.py
   scripts/goal_bridge_node.py
   scripts/odom_tf_node.py

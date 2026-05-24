@@ -4,6 +4,7 @@ import datetime
 import os
 import re
 import subprocess
+from pathlib import Path
 from typing import Optional
 
 import rclpy
@@ -23,7 +24,7 @@ def _sanitize_basename(raw: str) -> Optional[str]:
         return None
     s = os.path.basename(s.replace("\\", "/"))
     lower = s.lower()
-    for ext in (".yaml", ".yml", ".pgm"):
+    for ext in (".yaml", ".yml", ".pgm", ".posegraph", ".data"):
         if lower.endswith(ext):
             s = s[: -len(ext)]
             lower = s.lower()
@@ -45,7 +46,11 @@ class MapSaverTriggerNode(Node):
         self.save_directory = self.declare_parameter("save_directory", "/ws/saved_maps").value
         self.map_topic = self.declare_parameter("map_topic", "/map").value
         self.service_name = self.declare_parameter("service_name", "save_map").value
-        self.use_sim_time = self.declare_parameter("use_sim_time", False).value
+        self.serialize_service = self.declare_parameter(
+            "serialize_service", "/slam_toolbox/serialize_map"
+        ).value
+        self.save_map_timeout = float(self.declare_parameter("save_map_timeout", 10.0).value)
+        self.use_sim_time = self._parameter_value("use_sim_time", False)
 
         save_root = os.path.abspath(self.save_directory)
         os.makedirs(save_root, exist_ok=True)
@@ -59,6 +64,11 @@ class MapSaverTriggerNode(Node):
         self.get_logger().info(
             f"Map save service ready at {srv_topic} -> files under {self._save_root}/"
         )
+
+    def _parameter_value(self, name, default):
+        if not self.has_parameter(name):
+            return self.declare_parameter(name, default).value
+        return self.get_parameter(name).value
 
     def handle_save_map(self, request, response):
         raw = request.basename
@@ -76,16 +86,19 @@ class MapSaverTriggerNode(Node):
                 return response
             basename = cleaned
 
-        basepath = os.path.normpath(os.path.join(self._save_root, basename))
-        if not basepath.startswith(self._save_root + os.sep) and basepath != self._save_root:
+        map_dir = os.path.normpath(os.path.join(self._save_root, basename))
+        if not map_dir.startswith(self._save_root + os.sep) and map_dir != self._save_root:
             response.success = False
             response.message = "refusing path outside save_directory"
             self.get_logger().error(response.message)
             return response
 
+        os.makedirs(map_dir, exist_ok=True)
+        basepath = os.path.join(map_dir, basename)
         cmd = ["ros2", "run", "nav2_map_server", "map_saver_cli", "-f", basepath]
 
         ros_params = []
+        ros_params.append(f"save_map_timeout:={self.save_map_timeout}")
         if self.use_sim_time:
             ros_params.append("use_sim_time:=true")
         if self.map_topic and self.map_topic != "/map":
@@ -135,10 +148,64 @@ class MapSaverTriggerNode(Node):
             self.get_logger().error(response.message)
             return response
 
+        checkpoint_message = self.serialize_pose_graph(basepath)
+        if checkpoint_message is None:
+            response.success = False
+            response.message = (
+                f"saved occupancy map ({yaml_path}, {pgm_path}) but failed to save "
+                "slam_toolbox checkpoint"
+            )
+            return response
+
         response.success = True
-        response.message = f"saved {basename} ({yaml_path}, {pgm_path})"
+        response.message = (
+            f"saved map bundle {basename} under {map_dir}/ "
+            f"({Path(yaml_path).name}, {Path(pgm_path).name}; {checkpoint_message})"
+        )
         self.get_logger().info(response.message)
         return response
+
+    def serialize_pose_graph(self, basepath):
+        cmd = [
+            "ros2",
+            "service",
+            "call",
+            self.serialize_service,
+            "slam_toolbox/srv/SerializePoseGraph",
+            f"{{filename: {basepath}}}",
+        ]
+        self.get_logger().info(f"Saving slam_toolbox checkpoint via: {' '.join(cmd)}")
+
+        try:
+            proc = subprocess.run(
+                cmd,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired:
+            self.get_logger().error("slam_toolbox checkpoint save timed out after 120s")
+            return None
+        except OSError as exc:
+            self.get_logger().error(f"failed to call slam_toolbox checkpoint save: {exc}")
+            return None
+
+        data_path = basepath + ".data"
+        posegraph_path = basepath + ".posegraph"
+        output = (proc.stdout or "") + (proc.stderr or "")
+        if proc.returncode != 0 or "result=0" not in output:
+            self.get_logger().error(
+                f"slam_toolbox checkpoint save failed: {output.strip()[-2000:]}"
+            )
+            return None
+        if not (os.path.isfile(data_path) and os.path.isfile(posegraph_path)):
+            self.get_logger().error(
+                f"slam_toolbox checkpoint outputs missing: {data_path}, {posegraph_path}"
+            )
+            return None
+
+        return f"{Path(data_path).name}, {Path(posegraph_path).name}"
 
 
 def main():

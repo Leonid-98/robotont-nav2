@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction, SetEnvironmentVariable
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -9,8 +11,46 @@ from ament_index_python.packages import get_package_share_path
 from nav2_common.launch import RewrittenYaml
 
 
+def _checkpoint_path(checkpoint):
+    if not checkpoint:
+        return ""
+
+    path = Path(checkpoint)
+    if not path.is_absolute():
+        path = Path("/ws/saved_maps") / path
+    if path.is_dir():
+        path = path / path.name
+    elif not path.suffix:
+        bundle_path = path / path.name
+        if bundle_path.with_suffix(".posegraph").is_file() or bundle_path.with_suffix(".data").is_file():
+            path = bundle_path
+    if path.suffix in (".posegraph", ".data"):
+        path = path.with_suffix("")
+
+    missing = [
+        str(path.with_suffix(suffix))
+        for suffix in (".posegraph", ".data")
+        if not path.with_suffix(suffix).is_file()
+    ]
+    if missing:
+        raise RuntimeError(
+            f"Saved SLAM checkpoint '{checkpoint}' is incomplete. Missing: "
+            + ", ".join(missing)
+        )
+    return str(path)
+
+
 def _nav2_nodes(nav2_params, use_sim_time):
     nav2_remaps = [("/tf", "tf"), ("/tf_static", "tf_static")]
+    lifecycle_nodes = [
+        "controller_server",
+        "smoother_server",
+        "planner_server",
+        "behavior_server",
+        "bt_navigator",
+        "waypoint_follower",
+        "velocity_smoother",
+    ]
 
     return [
         Node(
@@ -80,17 +120,7 @@ def _nav2_nodes(nav2_params, use_sim_time):
             parameters=[
                 {"use_sim_time": use_sim_time},
                 {"autostart": True},
-                {
-                    "node_names": [
-                        "controller_server",
-                        "smoother_server",
-                        "planner_server",
-                        "behavior_server",
-                        "bt_navigator",
-                        "waypoint_follower",
-                        "velocity_smoother",
-                    ]
-                },
+                {"node_names": lifecycle_nodes},
             ],
         ),
     ]
@@ -98,19 +128,20 @@ def _nav2_nodes(nav2_params, use_sim_time):
 
 def _setup(context, *args, **kwargs):
     description_pkg = get_package_share_path("robotont_description")
-    bringup_pkg = get_package_share_path("robotont_bringup")
     gz_pkg = get_package_share_path("ros_gz_sim")
     slam_pkg = get_package_share_path("slam_toolbox")
 
     primary_color = LaunchConfiguration("primary_color").perform(context).strip()
     use_sim_time_text = LaunchConfiguration("use_sim_time").perform(context).strip()
     use_sim_time = use_sim_time_text.lower() == "true"
+    saved_map = LaunchConfiguration("saved_map").perform(context).strip()
+    checkpoint = _checkpoint_path(saved_map)
     foxglove_port = int(LaunchConfiguration("foxglove_port").perform(context).strip())
+    world = LaunchConfiguration("gazebo_world_file").perform(context).strip()
+    nav2_params_file = LaunchConfiguration("nav2_params_file").perform(context).strip()
+    slam_params = LaunchConfiguration("slam_params_file").perform(context).strip()
 
     robot_model = str(description_pkg / "urdf/gen3/robotont.urdf.xacro")
-    world = str(bringup_pkg / "worlds/robotont_room.sdf")
-    nav2_params_file = str(bringup_pkg / "config/nav2_params.yaml")
-    slam_params = str(bringup_pkg / "config/slam_toolbox.yaml")
     gz_launch = str(gz_pkg / "launch/gz_sim.launch.py")
     slam_launch = str(slam_pkg / "launch/online_async_launch.py")
 
@@ -134,6 +165,31 @@ def _setup(context, *args, **kwargs):
         ]),
         value_type=str,
     )
+
+    slam_nodes = [
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(slam_launch),
+            launch_arguments={
+                "use_sim_time": use_sim_time_text,
+                "slam_params_file": slam_params,
+                "autostart": "true",
+                "use_lifecycle_manager": "false",
+            }.items(),
+        ),
+    ]
+    if checkpoint:
+        slam_nodes.append(
+            Node(
+                package="robotont_bringup",
+                executable="slam_checkpoint_loader_node.py",
+                name="slam_checkpoint_loader",
+                output="screen",
+                parameters=[
+                    {"checkpoint": checkpoint},
+                    {"use_sim_time": use_sim_time},
+                ],
+            )
+        )
 
     return [
         IncludeLaunchDescription(
@@ -183,15 +239,7 @@ def _setup(context, *args, **kwargs):
                 {"child_frame": "base_footprint"},
             ],
         ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(slam_launch),
-            launch_arguments={
-                "use_sim_time": use_sim_time_text,
-                "slam_params_file": slam_params,
-                "autostart": "true",
-                "use_lifecycle_manager": "false",
-            }.items(),
-        ),
+        *slam_nodes,
         *_nav2_nodes(nav2_params, use_sim_time),
         Node(
             package="robotont_simple_simulator",
@@ -203,6 +251,18 @@ def _setup(context, *args, **kwargs):
                 {"goal_topic": "/goal_pose"},
                 {"default_frame": "map"},
                 {"action_name": "navigate_to_pose"},
+            ],
+        ),
+        Node(
+            package="robotont_simple_simulator",
+            executable="clicked_waypoint_node.py",
+            name="clicked_waypoint_node",
+            output="screen",
+            parameters=[
+                {"clicked_point_topic": "/clicked_point"},
+                {"default_frame": "map"},
+                {"action_name": "navigate_through_poses"},
+                {"use_sim_time": use_sim_time},
             ],
         ),
         Node(
@@ -236,6 +296,10 @@ def generate_launch_description():
         SetEnvironmentVariable("RCUTILS_LOGGING_BUFFERED_STREAM", "1"),
         DeclareLaunchArgument("primary_color", default_value="0.16 0.65 0.98 1.0"),
         DeclareLaunchArgument("use_sim_time", default_value="true"),
+        DeclareLaunchArgument("gazebo_world_file", default_value="/ws/gazebo_worlds/robotont_room.sdf"),
+        DeclareLaunchArgument("nav2_params_file", default_value="/ws/config/nav2_params.yaml"),
+        DeclareLaunchArgument("slam_params_file", default_value="/ws/config/slam_toolbox.yaml"),
+        DeclareLaunchArgument("saved_map", default_value=""),
         DeclareLaunchArgument("foxglove_port", default_value="8765"),
         OpaqueFunction(function=_setup),
     ])

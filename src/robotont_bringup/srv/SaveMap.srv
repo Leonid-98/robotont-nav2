@@ -1,4 +1,5 @@
-# Base file name only: no directories, no .yaml/.pgm suffix (those are added for you).
+# Map bundle name only: no directories, no suffix.
+# Files are saved under saved_maps/<basename>/<basename>.*.
 # Whitespace or empty string -> automatic name map_YYYYMMDD_HHMMSS (UTC).
 string basename
 ---

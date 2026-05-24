@@ -111,8 +111,8 @@ flowchart LR
 
 | Service | Type | Notes |
 |---------|------|--------|
-| `/save_map` | `robotont_bringup/srv/SaveMap` | Our helper: runs `map_saver_cli` into `./saved_maps` (see below). |
-| slam_toolbox services | e.g. `slam_toolbox/srv/SerializePoseGraph` | Serialize **pose graph** / map IO—not the same as Nav2 occupancy save. |
+| `/save_map` | `robotont_bringup/srv/SaveMap` | Our helper: saves occupancy files and a slam_toolbox checkpoint into `./saved_maps` (see below). |
+| slam_toolbox services | e.g. `slam_toolbox/srv/SerializePoseGraph` | Serialize **pose graph** checkpoints so mapping can resume later. |
 
 ### Nodes by mode
 
@@ -130,17 +130,19 @@ flowchart LR
 | `src/robotont_bringup/config/slam_toolbox.yaml` | Gazebo + custom Nav2 | slam_toolbox: `odom_frame`, `map_frame`, `base_frame`, `scan_topic`, resolution, ranges, **mapping** mode. |
 | `src/robotont_bringup/config/simple_sim_driver.yaml` | **Custom** mode only | `initial_x`, `initial_y`, `initial_theta`, `odom_frame`, `base_frame`. |
 | `worlds/*.json` | Custom mode | Geometry for `fake_laser` (`walls`, `boxes`). `origin` in JSON is **not** applied to TF (documentation / editor metadata). |
+| `src/robotont_bringup/worlds/*.sdf` | Gazebo mode | Headless Gazebo world geometry, obstacles, proxy robot, and lidar. |
 
 **Launch arguments**
 
-- **`robotont_nav2_gazebo.launch.py`:** `primary_color`, `use_sim_time` (default `true`), `foxglove_port`.
-- **`robotont_nav2_slam.launch.py`:** `primary_color`, `world_file` (default `/ws/worlds/room.json`), `foxglove_port`.
+- **`robotont_nav2_gazebo.launch.py`:** `primary_color`, `use_sim_time` (default `true`), `gazebo_world_file`, `nav2_params_file`, `slam_params_file`, `saved_map`, `foxglove_port`.
+- **`robotont_nav2_slam.launch.py`:** `primary_color`, `world_file`, `nav2_params_file`, `slam_params_file`, `sim_driver_params_file`, `saved_map`, `foxglove_port`.
 
 Pass-through from Docker: **`ROBOTONT_EXTRA_LAUNCH_ARGS`** is appended to the `ros2 launch ...` command (e.g. `foxglove_port:=9090`).
 
 **Bringup-only node parameters (in launch files)**
 
-- **`map_saver_trigger`:** `save_directory` (default `/ws/saved_maps`), `map_topic` (`/map`), `service_name` (`save_map`), `use_sim_time` (matches mode).
+- **`map_saver_trigger`:** `save_directory` (default `/ws/saved_maps`), `map_topic` (`/map`), `service_name` (`save_map`), `serialize_service` (`/slam_toolbox/serialize_map`), `save_map_timeout` (`10.0` seconds), `use_sim_time` (matches mode).
+- **`slam_checkpoint_loader`:** `checkpoint` (basename or path under `/ws/saved_maps`), `service_name` (`/slam_toolbox/deserialize_map`), `match_type` (defaults to `START_AT_FIRST_NODE`).
 - **`fake_laser`:** `world_file`, `odom_topic`, `scan_topic`, `frame_id`, `laser_x`, `laser_y`.
 - **`goal_bridge`:** `goal_topic`, `default_frame` (`map`), `action_name` (`navigate_to_pose`).
 
@@ -152,34 +154,62 @@ Pass-through from Docker: **`ROBOTONT_EXTRA_LAUNCH_ARGS`** is appended to the `r
 
 - **`src/`**: ROS packages (`robotont_bringup`, `robotont_description`, `robotont_simple_simulator`).
 - **`worlds/`**: JSON worlds (mounted read-only at `/ws/worlds` in the container).
-- **`saved_maps/`**: occupancy maps from `/save_map` (mounted read-write at `/ws/saved_maps`).
+- **`saved_maps/`**: occupancy maps and SLAM checkpoints from `/save_map` (mounted read-write at `/ws/saved_maps`).
+- **`src/robotont_bringup/config/`**: Nav2, SLAM, and custom simulator YAML (mounted read-only at `/ws/config`).
+- **`src/robotont_bringup/worlds/`**: Gazebo SDF worlds (mounted read-only at `/ws/gazebo_worlds`).
 
 ### Docker image
 
 - **Base:** `ros:jazzy-ros-base-noble`.
 - **Build:** `colcon build --symlink-install` over `src/`.
 - **Runtime `WORKDIR`:** `/ws/saved_maps` so slam_toolbox relative file saves land on the host mount when you use bare filenames.
+- **Runtime mounts:** JSON worlds, SDF worlds, YAML params, and saved maps are bind-mounted by Compose, so changing them needs only a container restart.
 
-Rebuild the image when you change **C++**, **package.xml/CMake**, **installed Python**, or **default YAML under `src/`** (unless you add a bind mount for config).
+Rebuild the image when you change **C++**, **package.xml/CMake**, **installed Python**, launch files, URDF/xacro, Dockerfile, or dependencies. Runtime inputs (`settings.env`, JSON worlds, SDF worlds, YAML params, saved maps) only need a restart.
 
-### `docker compose` environment variables
+### Env files
 
-Set on the host (or in a `.env` next to `docker-compose.yml`). Defaults shown where applicable.
+Plain Compose commands automatically pass both env files into the container through `docker-compose.yml`:
 
-| Variable | Default | Role |
-|----------|---------|------|
-| `ROBOTONT_WORLD_MODE` | `gazebo` | `gazebo` \| `custom` \| `simple` — selects launch file (see `scripts/launch_robotont.sh`). |
-| `ROBOTONT_WORLD_FILE` | `/ws/worlds/room.json` | JSON path **inside** the container for custom mode. |
-| `ROBOTONT_PRIMARY_COLOR` | `0.16 0.65 0.98 1.0` | URDF `xacro` `main_color` (RGBA string). |
-| `ROBOTONT_FOXGLOVE_PORT` | `8765` | Port **inside** the container for `foxglove_bridge`. |
-| `ROBOTONT_FOXGLOVE_HOST_PORT` | `8765` | Host port mapped to Foxglove. |
-| `ROBOTONT_EXTRA_LAUNCH_ARGS` | *(empty)* | Extra `ros2 launch` arguments (quoted if spaces). |
-| `GZ_PARTITION` | `robotont` | Gazebo transport partition name. |
-| `GZ_DISCOVERY_MSG_PORT` / `GZ_DISCOVERY_SRV_PORT` | `10317` / `10318` | UDP discovery ports inside the container. |
-| `GZ_DISCOVERY_MSG_HOST_PORT` / `GZ_DISCOVERY_SRV_HOST_PORT` | same | Optional host-side UDP port mapping overrides. |
-| `IGN_*` | mirrors `GZ_*` | Legacy env names for some Gazebo tooling. |
+```bash
+docker compose up --build
+```
 
-Compose also sets **`ROS_DOMAIN_ID=42`**, **`RMW_IMPLEMENTATION=rmw_fastrtps_cpp`**, **`LIBGL_ALWAYS_SOFTWARE=1`**.
+You can also pass both env files explicitly when you want Compose interpolation to see host-side overrides from those files:
+
+```bash
+docker compose --env-file defaults.env --env-file settings.env ...
+```
+
+`defaults.env` is for stable infrastructure defaults. `settings.env` is the editable simulation profile.
+Shell variables can still override port interpolation values such as `ROBOTONT_FOXGLOVE_HOST_PORT`.
+
+| Variable | File | Options / example | Meaning |
+|----------|------|-------------------|---------|
+| `ROBOTONT_WORLD_MODE` | `settings.env` | `gazebo`, `custom`, `simple`, `foxglove` | Selects the launch path in `scripts/launch_robotont.sh`. `custom` uses JSON ray-casting; `gazebo` uses Gazebo-generated `/scan` and `/odom`; `simple`/`foxglove` starts the lightweight Foxglove-only stack. |
+| `ROBOTONT_WORLD_FILE` | `settings.env` | `/ws/worlds/room.json` | Custom-mode JSON vector world loaded by `fake_laser_node`. Host files live in `worlds/`. |
+| `ROBOTONT_GAZEBO_WORLD_FILE` | `defaults.env` | `/ws/gazebo_worlds/robotont_room.sdf` | Gazebo-mode SDF world. Host files live in `src/robotont_bringup/worlds/`. |
+| `ROBOTONT_MAP_NAME` | `settings.env` | empty, `my_room`, `/ws/saved_maps/my_room/my_room.posegraph` | Optional SLAM checkpoint to load at deploy. Empty starts fresh mapping. A basename first loads the bundle checkpoint at `/ws/saved_maps/<name>/<name>.posegraph` + `.data`, with legacy root-level checkpoints still supported. |
+| `ROBOTONT_NAV2_PARAMS_FILE` | `defaults.env` | `/ws/config/nav2_params.yaml` | Mounted Nav2 params used by Gazebo and custom modes. |
+| `ROBOTONT_SLAM_PARAMS_FILE` | `defaults.env` | `/ws/config/slam_toolbox.yaml` | Mounted slam_toolbox params used by Gazebo and custom modes. |
+| `ROBOTONT_SIM_DRIVER_PARAMS_FILE` | `defaults.env` | `/ws/config/simple_sim_driver.yaml` | Mounted custom-mode driver params, including initial robot pose. |
+| `ROBOTONT_PRIMARY_COLOR` | `settings.env` | `0.16 0.65 0.98 1.0` | URDF `xacro` `main_color` RGBA string. |
+| `ROBOTONT_EXTRA_LAUNCH_ARGS` | `settings.env` | empty, `use_sim_time:=false` | Extra arguments appended to the selected `ros2 launch` command. |
+| `ROBOTONT_FOXGLOVE_PORT` | `defaults.env` | `8765` | Container port used by `foxglove_bridge`. |
+| `ROBOTONT_FOXGLOVE_HOST_PORT` | `defaults.env` | `8765` | Host port mapped to Foxglove. Connect to `ws://localhost:<host-port>`. |
+| `ROS_DOMAIN_ID` | `defaults.env` | `42` | ROS 2 DDS domain for this stack. |
+| `RMW_IMPLEMENTATION` | `defaults.env` | `rmw_fastrtps_cpp` | ROS middleware implementation. |
+| `LIBGL_ALWAYS_SOFTWARE` | `defaults.env` | `1` | Keeps headless graphics paths software-rendered. |
+| `GZ_PARTITION` / `IGN_PARTITION` | `defaults.env` | `robotont` | Gazebo Transport partition names. `IGN_*` exists for legacy Gazebo tooling. |
+| `GZ_DISCOVERY_MSG_PORT` / `GZ_DISCOVERY_SRV_PORT` | `defaults.env` | `10317`, `10318` | Container UDP discovery ports for Gazebo Transport. |
+| `GZ_DISCOVERY_MSG_HOST_PORT` / `GZ_DISCOVERY_SRV_HOST_PORT` | `defaults.env` | `10317`, `10318` | Host UDP discovery port mappings. |
+| `IGN_DISCOVERY_MSG_PORT` / `IGN_DISCOVERY_SRV_PORT` | `defaults.env` | `10317`, `10318` | Legacy Gazebo discovery env values. |
+
+After editing `settings.env`, `worlds/*.json`, `src/robotont_bringup/config/*.yaml`, or `src/robotont_bringup/worlds/*.sdf`, restart the container:
+
+```bash
+docker compose --env-file defaults.env --env-file settings.env restart robotont
+```
 
 ### Quick run
 
@@ -229,7 +259,7 @@ Example:
 CLI example:
 
 ```bash
-docker compose exec robotont bash -lc 'source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 topic pub --once /goal_pose geometry_msgs/msg/PoseStamped "{header: {frame_id: map}, pose: {position: {x: 1.5, y: 0.5, z: 0.0}, orientation: {w: 1.0}}}"'
+docker compose --env-file defaults.env --env-file settings.env exec robotont bash -lc 'source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 topic pub --once /goal_pose geometry_msgs/msg/PoseStamped "{header: {frame_id: map}, pose: {position: {x: 1.5, y: 0.5, z: 0.0}, orientation: {w: 1.0}}}"'
 ```
 
 ---
@@ -238,7 +268,7 @@ docker compose exec robotont bash -lc 'source /opt/ros/jazzy/setup.bash && sourc
 
 ```bash
 cd robotics-project
-docker compose exec robotont bash
+docker compose --env-file defaults.env --env-file settings.env exec robotont bash
 source /opt/ros/jazzy/setup.bash
 source /ws/install/setup.bash
 ros2 topic pub /cmd_vel geometry_msgs/msg/Twist \
@@ -252,7 +282,7 @@ Stop with `Ctrl+C`. When Nav2 is active, it also publishes `/cmd_vel` for autono
 ## 10. Inspect the graph
 
 ```bash
-docker compose exec robotont bash -lc "source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 node list"
+docker compose --env-file defaults.env --env-file settings.env exec robotont bash -lc "source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 node list"
 ```
 
 **Gazebo mode** (illustrative): `bt_navigator`, `controller_server`, `foxglove_bridge`, `goal_bridge`, `joint_state_publisher`, `odom_tf`, `planner_server`, `robot_state_publisher`, `ros_gz_bridge`, `slam_toolbox`, … — **not** `driver` / `fake_laser`.
@@ -260,45 +290,77 @@ docker compose exec robotont bash -lc "source /opt/ros/jazzy/setup.bash && sourc
 **Custom mode:** includes **`driver`**, **`fake_laser`**, same Nav2 + slam + bridge pattern.
 
 ```bash
-docker compose exec robotont bash -lc "source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 topic list"
+docker compose --env-file defaults.env --env-file settings.env exec robotont bash -lc "source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 topic list"
 ```
 
 ---
 
-## 11. Save the generated map (occupancy grid)
+## 11. Save and resume mapping
 
-Maps are written under **`saved_maps/`** on the host (`/ws/saved_maps` in the container).
+Map bundles are written under **`saved_maps/`** on the host (`/ws/saved_maps` in the container).
 
 ### Recommended: `/save_map` (`robotont_bringup/srv/SaveMap`)
 
-Runs Nav2 **`map_saver_cli`** against live **`/map`** (not slam_toolbox pose-graph serialization).
+Runs Nav2 **`map_saver_cli`** against live **`/map`** and then calls slam_toolbox **`/slam_toolbox/serialize_map`**.
 
-- **`{ "basename": "my_room" }`** → `my_room.yaml` + `my_room.pgm`.
-- **`{ "basename": "" }`** → automatic `map_YYYYMMDD_HHMMSS`.
+- **`{ "basename": "my_room" }`** → `saved_maps/my_room/my_room.yaml`, `.pgm`, `.posegraph`, `.data`.
+- **`{ "basename": "" }`** → automatic bundle directory `saved_maps/map_YYYYMMDD_HHMMSS/`.
 
 Foxglove: **Call service** → `/save_map` → type **`robotont_bringup/srv/SaveMap`**.
 
 CLI:
 
 ```bash
-docker compose exec robotont bash -lc "source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 service call /save_map robotont_bringup/srv/SaveMap '{basename: lobby}'"
+docker compose --env-file defaults.env --env-file settings.env exec robotont bash -lc "source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 service call /save_map robotont_bringup/srv/SaveMap '{basename: lobby}'"
 ```
 
 Automatic name:
 
 ```bash
-docker compose exec robotont bash -lc "source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 service call /save_map robotont_bringup/srv/SaveMap '{basename: \"\"}'"
+docker compose --env-file defaults.env --env-file settings.env exec robotont bash -lc "source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 service call /save_map robotont_bringup/srv/SaveMap '{basename: \"\"}'"
 ```
 
-Direct CLI (same effect, explicit path):
+Occupancy-only direct CLI:
 
 ```bash
-docker compose exec robotont bash -lc 'source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 run nav2_map_server map_saver_cli -f /ws/saved_maps/robotont_demo_map'
+docker compose --env-file defaults.env --env-file settings.env exec robotont bash -lc 'source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 run nav2_map_server map_saver_cli -f /ws/saved_maps/robotont_demo_map'
 ```
+
+Direct SLAM checkpoint CLI:
+
+```bash
+docker compose --env-file defaults.env --env-file settings.env exec robotont bash -lc 'source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash && ros2 service call /slam_toolbox/serialize_map slam_toolbox/srv/SerializePoseGraph "{filename: /ws/saved_maps/robotont_demo_map}"'
+```
+
+`/slam_toolbox/save_map` is slam_toolbox's built-in occupancy save service. It does **not** create the full bundle. Use this project's `/save_map` service when you want both visualization files (`.yaml` + `.pgm`) and resumable SLAM checkpoint files (`.posegraph` + `.data`).
+
+### Resume a saved SLAM checkpoint during deploy
+
+Set `ROBOTONT_MAP_NAME` in `settings.env`, or use a shell override before Compose. Use the basename without extension:
+
+```bash
+ROBOTONT_WORLD_MODE=custom ROBOTONT_MAP_NAME=my_room docker compose --env-file defaults.env --env-file settings.env up --build
+```
+
+This starts `slam_toolbox`, loads `/ws/saved_maps/my_room/my_room.posegraph` + `/ws/saved_maps/my_room/my_room.data`, and continues mapping from that checkpoint. Nav2 still consumes `/map` from `slam_toolbox`.
+
+You may also pass an explicit container path:
+
+```bash
+ROBOTONT_WORLD_MODE=custom ROBOTONT_MAP_NAME=/ws/saved_maps/my_room.posegraph docker compose --env-file defaults.env --env-file settings.env up --build
+```
+
+For the new bundle layout, this is also valid:
+
+```bash
+ROBOTONT_WORLD_MODE=custom ROBOTONT_MAP_NAME=/ws/saved_maps/my_room docker compose --env-file defaults.env --env-file settings.env up --build
+```
+
+Occupancy-only files (`.yaml` + `.pgm`) are not enough to resume mapping. They are useful for visualization or static-map localization, but continuing an unfinished exploration needs the slam_toolbox checkpoint files (`.posegraph` + `.data`).
 
 ### slam_toolbox `SerializePoseGraph`
 
-Writes **`filename.pgm` / `filename.yaml`** relative to the process **current working directory**. The image uses **`WORKDIR /ws/saved_maps`**, so a bare `test1` usually lands in **`./saved_maps/`**. For older runs, files might appear under `/ws/`; copy with `docker compose cp robotont:/ws/test1.yaml ./saved_maps/` (and `.pgm`). Using **`/ws/saved_maps/<name>`** as the filename is always safe.
+The helper above calls this for you. Direct service calls write **`filename.posegraph` / `filename.data`**; use `/ws/saved_maps/<name>` as the filename so the files land on the host mount.
 
 ---
 
@@ -336,34 +398,34 @@ Put files under **`worlds/`** — mounted at **`/ws/worlds`**; no image rebuild 
 
 ### Initial robot pose (custom mode)
 
-Gazebo spawn comes from the SDF. In **custom** mode, set **`src/robotont_bringup/config/simple_sim_driver.yaml`** (`initial_x`, `initial_y`, `initial_theta` in radians). Same axes as JSON walls/boxes. Changing that file requires an **image rebuild** unless you mount an override.
+Gazebo spawn comes from the SDF. In **custom** mode, set **`src/robotont_bringup/config/simple_sim_driver.yaml`** (`initial_x`, `initial_y`, `initial_theta` in radians). Same axes as JSON walls/boxes. This file is mounted at `/ws/config/simple_sim_driver.yaml`; restart the container after changing it.
 
 ---
 
 ## 13. Mode switch examples
 
 ```bash
-docker compose down
-ROBOTONT_WORLD_MODE=custom docker compose up
+docker compose --env-file defaults.env --env-file settings.env down
+ROBOTONT_WORLD_MODE=custom docker compose --env-file defaults.env --env-file settings.env up
 ```
 
 Different JSON:
 
 ```bash
-docker compose down
-ROBOTONT_WORLD_MODE=custom ROBOTONT_WORLD_FILE=/ws/worlds/custom.json docker compose up
+docker compose --env-file defaults.env --env-file settings.env down
+ROBOTONT_WORLD_MODE=custom ROBOTONT_WORLD_FILE=/ws/worlds/custom.json docker compose --env-file defaults.env --env-file settings.env up
 ```
 
 Gazebo (default):
 
 ```bash
-ROBOTONT_WORLD_MODE=gazebo docker compose up --build
+ROBOTONT_WORLD_MODE=gazebo docker compose --env-file defaults.env --env-file settings.env up --build
 ```
 
 Simple Foxglove-only stack:
 
 ```bash
-ROBOTONT_WORLD_MODE=simple docker compose up
+ROBOTONT_WORLD_MODE=simple docker compose --env-file defaults.env --env-file settings.env up
 ```
 
 ---
@@ -434,5 +496,3 @@ Gazebo runs **headless** in `gazebo` mode and feeds ROS via **`ros_gz_bridge`**.
 **Local plan looks like a dot while `/plan` is long:** Nav2’s **FeasiblePathHandler** only keeps poses that fall **inside the rolling local costmap**. If the window is too small, the transformed path is **clipped at the map edge** and DWB sees almost nothing—raise **`local_costmap` width/height**, increase **`path_handler.prune_distance`**, and **`search_window`** (see `nav2_params.yaml`).
 
 ---
-
-

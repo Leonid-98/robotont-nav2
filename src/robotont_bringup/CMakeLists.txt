@@ -15,6 +15,7 @@ install(
 
 install(PROGRAMS
   scripts/map_saver_trigger_node.py
+  scripts/slam_checkpoint_loader_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
