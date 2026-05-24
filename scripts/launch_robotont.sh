@@ -41,7 +41,7 @@ case "${mode}" in
       foxglove_port:="${foxglove_port}" \
       ${extra_args}
     ;;
-  simple|foxglove)
+  simple)
     exec ros2 launch robotont_bringup robotont_foxglove.launch.py \
       generation:=3 \
       primary_color:="${primary_color}" \
@@ -50,7 +50,7 @@ case "${mode}" in
     ;;
   *)
     echo "Unknown ROBOTONT_WORLD_MODE='${mode}'" >&2
-    echo "Expected one of: gazebo, custom, simple, foxglove" >&2
+    echo "Expected one of: gazebo, custom, simple" >&2
     exit 2
     ;;
 esac

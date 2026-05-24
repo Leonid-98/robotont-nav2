@@ -75,7 +75,7 @@ ROS Params (src/robotont_bringup/config/):
 
 | Variable | File | Options / example | Meaning |
 |----------|------|-------------------|---------|
-| `ROBOTONT_WORLD_MODE` | `settings.env` | `gazebo`, `custom`, `simple`, `foxglove` | Selects the launch path in `scripts/launch_robotont.sh`. 1.`custom` uses JSON ray-casting; `gazebo` uses Gazebo-generated `/scan` and `/odom`; `simple`/`foxglove` starts the lightweight Foxglove-only stack. |
+| `ROBOTONT_WORLD_MODE` | `settings.env` | `gazebo`, `custom`, `simple` | Selects the launch path in `scripts/launch_robotont.sh`. 1.`custom` uses JSON ray-casting; `gazebo` uses Gazebo-generated `/scan` and `/odom`; `simple` starts the lightweight Foxglove-only stack. |
 | `ROBOTONT_WORLD_FILE` | `settings.env` | `/ws/worlds/room.json` | Custom-mode JSON vector world loaded by `fake_laser_node`. Host files live in `worlds/`. |
 | `ROBOTONT_GAZEBO_WORLD_FILE` | `defaults.env` | `/ws/gazebo_worlds/robotont_room.sdf` | Gazebo-mode SDF world. Host files live in `src/robotont_bringup/worlds/`. |
 | `ROBOTONT_MAP_NAME` | `settings.env` | empty, `my_room`, `/ws/saved_maps/my_room/my_room.posegraph` | Optional SLAM checkpoint to load at deploy. Empty starts fresh mapping. A basename first loads the bundle checkpoint at `/ws/saved_maps/<name>/<name>.posegraph` + `.data`. |

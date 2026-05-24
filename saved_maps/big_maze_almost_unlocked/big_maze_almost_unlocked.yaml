@@ -1,7 +1,7 @@
-image: robotont_hello.pgm
+image: big_maze_almost_unlocked.pgm
 mode: trinary
 resolution: 0.050
-origin: [-3.025, -2.018, 0]
+origin: [-9.965, -3.612, 0]
 negate: 0
 occupied_thresh: 0.65
 free_thresh: 0.196
