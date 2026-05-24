@@ -1,0 +1,269 @@
+{
+  "configById": {
+    "3D!3rqlyiz": {
+      "cameraState": {
+        "perspective": true,
+        "distance": 6.811232525758297,
+        "phi": 41.454274389159245,
+        "thetaOffset": -0.8158313645036461,
+        "targetOffset": [
+          0.2360337392188229,
+          -0.855953886807153,
+          -1.5165708726092438e-19
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-none",
+      "fixedFrame": "map",
+      "scene": {
+        "transforms": {
+          "visible": false
+        }
+      },
+      "transforms": {},
+      "topics": {
+        "/robot_description": {
+          "visible": true
+        },
+        "/map": {
+          "visible": true
+        },
+        "/marker": {
+          "visible": false
+        },
+        "/scan": {
+          "visible": false,
+          "colorField": "intensity",
+          "colorMode": "colormap",
+          "colorMap": "turbo"
+        },
+        "/plan_smoothed": {
+          "visible": false
+        },
+        "/transformed_global_plan": {
+          "visible": false
+        },
+        "/local_costmap/costmap": {
+          "visible": false,
+          "minColor": "#d0eeffff",
+          "maxColor": "#00a2ffff"
+        },
+        "/local_costmap/obstacle_layer": {
+          "visible": false
+        },
+        "/initialpose": {
+          "visible": false
+        },
+        "/goal_pose": {
+          "visible": false
+        },
+        "/global_costmap/obstacle_layer": {
+          "visible": false
+        },
+        "/global_costmap/static_layer": {
+          "visible": false
+        },
+        "/global_costmap/costmap": {
+          "visible": false,
+          "minColor": "#00ff00ff",
+          "maxColor": "#ff0000ff",
+          "frameLocked": false,
+          "drawBehind": false
+        },
+        "/cost_cloud": {
+          "visible": false
+        },
+        "/pose": {
+          "visible": false
+        },
+        "/slam_toolbox/graph_visualization": {
+          "visible": false
+        },
+        "/global_costmap/published_footprint": {
+          "visible": false
+        },
+        "/local_costmap/published_footprint": {
+          "visible": false
+        },
+        "/plan": {
+          "visible": true,
+          "gradient": [
+            "#06ff00bd",
+            "#06ff00bd"
+          ]
+        },
+        "/local_plan": {
+          "visible": true,
+          "gradient": [
+            "#1e00ff80",
+            "#1e00ff80"
+          ]
+        },
+        "/received_global_plan": {
+          "visible": false
+        },
+        "/slam_toolbox/scan_visualization": {
+          "visible": false
+        },
+        "/local_costmap/static_layer": {
+          "visible": false
+        },
+        "/lookahead_collision_arc": {
+          "visible": false
+        },
+        "/waypoints/path": {
+          "visible": false
+        },
+        "/waypoints/markers": {
+          "visible": true,
+          "showOutlines": true
+        }
+      },
+      "layers": {
+        "grid": {
+          "visible": true,
+          "drawBehind": false,
+          "instanceId": "377941d5-318d-40a7-a3d1-a0a24b17f831",
+          "layerId": "foxglove.Grid",
+          "size": 10,
+          "divisions": 10,
+          "lineWidth": 1,
+          "color": "#248eff",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "frameId": "odom"
+        }
+      },
+      "publish": {
+        "type": "point",
+        "poseTopic": "/goal_pose",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "synchronize": false,
+      "imageMode": {},
+      "followTf": "odom"
+    },
+    "RosOut!1ft3t6": {
+      "minLogLevel": 1,
+      "preload": true,
+      "searchTerms": [],
+      "nameFilter": {
+        "foxglove_bridge": {
+          "visible": false
+        },
+        "local_costmap.local_costmap": {
+          "visible": false
+        },
+        "global_costmap.global_costmap": {
+          "visible": false
+        },
+        "controller_server": {
+          "visible": false
+        },
+        "bt_navigator": {
+          "visible": false
+        }
+      },
+      "fontSize": 12
+    },
+    "CallService!23rfgfc": {
+      "requestPayload": "{\n  \"basename\": \"robotont_hello\"\n}",
+      "layout": "vertical",
+      "timeoutSeconds": 10,
+      "serviceName": "/save_map",
+      "editingMode": true
+    },
+    "Publish!2g6crhj": {
+      "topicName": "/waypoints/execute",
+      "datatype": "std_msgs/msg/Empty",
+      "value": "{}",
+      "foxglovePanelTitle": "Waypoints: Exec",
+      "advancedView": false
+    },
+    "Publish!1vc0eiv": {
+      "topicName": "/waypoints/clear",
+      "datatype": "std_msgs/msg/Empty",
+      "value": "{}",
+      "foxglovePanelTitle": "Waypoints: Clear",
+      "advancedView": false
+    },
+    "Teleop!4831rs4": {
+      "topic": "/cmd_vel",
+      "publishRate": 10,
+      "autoSendStopOnRelease": true,
+      "upButton": {
+        "field": "linear-x",
+        "value": 1
+      },
+      "downButton": {
+        "field": "linear-x",
+        "value": -1
+      },
+      "leftButton": {
+        "field": "angular-z",
+        "value": 1
+      },
+      "rightButton": {
+        "field": "angular-z",
+        "value": -1
+      },
+      "stopButton": {
+        "field": "linear-x",
+        "value": 0
+      }
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": {
+    "first": {
+      "first": "3D!3rqlyiz",
+      "second": "RosOut!1ft3t6",
+      "direction": "row",
+      "splitPercentage": 73.66309682695571
+    },
+    "second": {
+      "first": {
+        "first": "CallService!23rfgfc",
+        "second": {
+          "first": "Publish!2g6crhj",
+          "second": "Publish!1vc0eiv",
+          "direction": "column"
+        },
+        "direction": "row"
+      },
+      "second": "Teleop!4831rs4",
+      "direction": "column"
+    },
+    "direction": "row",
+    "splitPercentage": 72.44340359094458
+  }
+}
