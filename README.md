@@ -8,7 +8,7 @@ The project uses a virtual copy of Robotont. The main focus was to build Foxglov
 
 <img src="notes/img/preview.png" alt="" style="width:500px;"/>
 
-<iframe width="500" src="https://youtu.be/ZjLeJCJE14o" allowfullscreen></iframe>
+YouTube video overview: https://youtu.be/ZjLeJCJE14o
 
 
 ## Key features
