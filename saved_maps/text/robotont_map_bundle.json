@@ -1,0 +1,13 @@
+{
+  "files": {
+    "data": "text.data",
+    "map_image": "text.pgm",
+    "map_yaml": "text.yaml",
+    "posegraph": "text.posegraph"
+  },
+  "name": "text",
+  "version": 1,
+  "world_file": "/ws/worlds/text.json",
+  "world_mode": "custom",
+  "world_snapshot": "world.json"
+}
