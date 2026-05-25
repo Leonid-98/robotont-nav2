@@ -103,6 +103,14 @@ ROS Params (src/robotont_bringup/config/):
 
 # Business Logic
 
+## Loading saved SLAM maps
+
+`ROBOTONT_MAP_NAME=<name>` loads the slam_toolbox checkpoint from `saved_maps/<name>/<name>.posegraph` and `.data`, then continues mapping. During load, `slam_checkpoint_loader` waits for the current `/odom` pose and passes it to slam_toolbox as the initial `map -> base_footprint` pose. This keeps the loaded map aligned with the simulator's current robot pose and avoids the common `map -> odom` offset that makes Foxglove look like the map is drifting.
+
+For custom mode, the simulator start pose is controlled by `src/robotont_bringup/config/simple_sim_driver.yaml`. The `/save_map` helper stores a copy of the active JSON world as `saved_maps/<name>/world.json`; when loading that bundle, the fake laser uses this saved world snapshot automatically. This prevents loading one pose graph while ray-casting a different JSON world, which would make new laser obstacles appear shifted from the preloaded map.
+
+Older bundles that do not have `world.json` still depend on `ROBOTONT_WORLD_FILE` in `settings.env`. Make sure it points to the same JSON world that was used when the map was created.
+
 ## What we simulate
 
 | Piece | Role |

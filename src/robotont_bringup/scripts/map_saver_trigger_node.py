@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import datetime
+import json
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -157,10 +159,12 @@ class MapSaverTriggerNode(Node):
             )
             return response
 
+        metadata_file = self.write_bundle_metadata(map_dir, basename)
         response.success = True
         response.message = (
             f"saved map bundle {basename} under {map_dir}/ "
-            f"({Path(yaml_path).name}, {Path(pgm_path).name}; {checkpoint_message})"
+            f"({Path(yaml_path).name}, {Path(pgm_path).name}; "
+            f"{checkpoint_message}; {metadata_file})"
         )
         self.get_logger().info(response.message)
         return response
@@ -206,6 +210,39 @@ class MapSaverTriggerNode(Node):
             return None
 
         return f"{Path(data_path).name}, {Path(posegraph_path).name}"
+
+    def write_bundle_metadata(self, map_dir, basename):
+        world_mode = os.environ.get("ROBOTONT_WORLD_MODE", "")
+        world_file = os.environ.get("ROBOTONT_WORLD_FILE", "")
+        metadata = {
+            "version": 1,
+            "name": basename,
+            "world_mode": world_mode,
+            "world_file": world_file,
+            "files": {
+                "map_yaml": f"{basename}.yaml",
+                "map_image": f"{basename}.pgm",
+                "posegraph": f"{basename}.posegraph",
+                "data": f"{basename}.data",
+            },
+        }
+
+        if world_mode == "custom" and world_file:
+            source = Path(world_file)
+            if source.is_file():
+                snapshot = Path(map_dir) / "world.json"
+                shutil.copyfile(source, snapshot)
+                metadata["world_snapshot"] = snapshot.name
+                self.get_logger().info(f"Copied custom world snapshot to {snapshot}")
+            else:
+                metadata["world_snapshot_error"] = f"world_file not found: {world_file}"
+                self.get_logger().warn(metadata["world_snapshot_error"])
+
+        metadata_path = Path(map_dir) / "robotont_map_bundle.json"
+        with metadata_path.open("w", encoding="utf-8") as stream:
+            json.dump(metadata, stream, indent=2, sort_keys=True)
+            stream.write("\n")
+        return metadata_path.name
 
 
 def main():

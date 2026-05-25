@@ -40,14 +40,23 @@ def _checkpoint_path(checkpoint):
     return str(path)
 
 
+def _world_file_for_checkpoint(checkpoint, requested_world_file):
+    if checkpoint:
+        bundle_world = Path(checkpoint).parent / "world.json"
+        if bundle_world.is_file():
+            return str(bundle_world)
+    return requested_world_file
+
+
 def _setup(context, *args, **kwargs):
     description_pkg = get_package_share_path("robotont_description")
     slam_pkg = get_package_share_path("slam_toolbox")
 
     primary_color = LaunchConfiguration("primary_color").perform(context).strip()
-    world_file = LaunchConfiguration("world_file").perform(context).strip()
+    requested_world_file = LaunchConfiguration("world_file").perform(context).strip()
     saved_map = LaunchConfiguration("saved_map").perform(context).strip()
     checkpoint = _checkpoint_path(saved_map)
+    world_file = _world_file_for_checkpoint(checkpoint, requested_world_file)
     foxglove_port = int(LaunchConfiguration("foxglove_port").perform(context).strip())
     nav2_params_file = LaunchConfiguration("nav2_params_file").perform(context).strip()
     slam_params = LaunchConfiguration("slam_params_file").perform(context).strip()
